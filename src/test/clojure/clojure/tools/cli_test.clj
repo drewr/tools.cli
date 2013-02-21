@@ -24,7 +24,7 @@
       (is (= {:verbose false}
              (first (cli ["--no-verbose"]
                          ["--[no-]verbose"])))))
-    
+
     (testing "explicit syntax"
       (is (= {:verbose true}
              (first (cli ["--verbose"]
@@ -69,9 +69,9 @@
     (deftest should-merge-identical-arguments
       (let [assoc-fn (fn [previous key val]
                        (assoc previous key
-                         (if-let [oldval (get previous key)]
-                           (merge oldval val)
-                           (hash-set val))))
+                              (if-let [oldval (get previous key)]
+                                (merge oldval val)
+                                (hash-set val))))
             [options args _] (cli ["-p" "1" "--port" "2"]
                                   ["-p" "--port" "description" :assoc-fn assoc-fn])]
         (is (= {:port #{"1" "2"}} options)))))
@@ -90,7 +90,8 @@
         (is (= ["some-file"] args))))
 
     (deftest should-accept-double-hyphen-as-end-of-args
-      (let [[options args _] (cli ["--foo" "bar" "--verbose" "--" "file" "-x" "other"]
+      (let [[options args _] (cli ["--foo" "bar" "--verbose"
+                                   "--" "file" "-x" "other"]
                                   ["--foo"]
                                   ["--[no-]verbose"])]
         (is (= {:foo "bar" :verbose true} options))

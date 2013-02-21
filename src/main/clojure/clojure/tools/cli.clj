@@ -85,7 +85,8 @@
                  (rest args))
 
           (opt? opt)
-          (recur ((spec :assoc-fn) options (spec :name) ((spec :parse-fn) (second args)))
+          (recur ((spec :assoc-fn) options
+                  (spec :name) ((spec :parse-fn) (second args)))
                  extra-args
                  (drop 2 args))
 
@@ -96,7 +97,8 @@
   [switches flag]
   (-> (for [^String s switches]
         (cond
-          (and flag (flag? s))            [(replace s #"\[no-\]" "no-") (replace s #"\[no-\]" "")]
+          (and flag (flag? s)) [(replace s #"\[no-\]" "no-")
+                                (replace s #"\[no-\]" "")]
           (and flag (.startsWith s "--")) [(replace s #"--" "--no-") s]
           :default                        [s]))
       flatten))
@@ -122,7 +124,8 @@
   "Parse the provided args using the given specs. Specs are vectors
   describing a command line argument. For example:
 
-  [\"-p\" \"--port\" \"Port to listen on\" :default 3000 :parse-fn #(Integer/parseInt %)]
+  [\"-p\" \"--port\" \"Port to listen on\"
+      :default 3000 :parse-fn #(Integer/parseInt %)]
 
   First provide the switches (from least to most specific), then a doc
   string, and pairs of options.
