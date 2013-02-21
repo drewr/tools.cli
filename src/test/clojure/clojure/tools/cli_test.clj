@@ -8,6 +8,13 @@
            (first (cli ["--host" "localhost"]
                        ["--host"])))))
 
+  (deftest should-handle-gnu-long-opts
+    (is (= {:host "localhost"
+            :port "9200"}
+           (first (cli ["--host=localhost" "--port=9200"]
+                       ["--host"]
+                       ["--port"])))))
+
   (testing "booleans"
     (deftest should-handle-trues
       (is (= {:verbose true}

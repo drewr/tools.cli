@@ -39,13 +39,22 @@
 (defn- end-of-args? [x]
   (= "--" x))
 
+(defn- gnu-style-long-opt? [x]
+  (re-find #"^--[^ ]+=" x))
+
+(defn split-gnu-long-opt [x]
+  (vec (.split x "=" 2)))
+
 (defn- spec-for
-  [arg specs]
-  (->> specs
-       (filter (fn [s]
-                   (let [switches (set (s :switches))]
-                     (contains? switches arg))))
-       first))
+  [[opt & args] specs]
+  (let [spec-for* (fn [opt*]
+                    (->> specs
+                         (filter #((set (:switches %)) opt*))
+                         first))]
+    (if (gnu-style-long-opt? opt)
+      (let [[o a] (split-gnu-long-opt opt)]
+        [o (concat [o a] args) (spec-for* o)])
+      [opt (cons opt args) (spec-for* opt)])))
 
 (defn- default-values-for
   [specs]
@@ -62,35 +71,34 @@
          args       args]
     (if-not (seq args)
       [options extra-args]
-      (let [opt  (first args)
-            spec (spec-for opt specs)]
+      (let [[opt args spec] (spec-for args specs)]
         (cond
-         (end-of-args? opt)
-         (recur options (into extra-args (vec (rest args))) nil)
+          (end-of-args? opt)
+          (recur options (into extra-args (vec (rest args))) nil)
 
-         (and (opt? opt) (nil? spec))
-         (throw (Exception. (str "'" opt "' is not a valid argument")))
-         
-         (and (opt? opt) (spec :flag))
-         (recur ((spec :assoc-fn) options (spec :name) (flag-for opt))
-                extra-args
-                (rest args))
+          (and (opt? opt) (nil? spec))
+          (throw (Exception. (str "'" opt "' is not a valid argument")))
 
-         (opt? opt)
-         (recur ((spec :assoc-fn) options (spec :name) ((spec :parse-fn) (second args)))
-                extra-args
-                (drop 2 args))
+          (and (opt? opt) (spec :flag))
+          (recur ((spec :assoc-fn) options (spec :name) (flag-for opt))
+                 extra-args
+                 (rest args))
 
-         :default
-         (recur options (conj extra-args (first args)) (rest args)))))))
+          (opt? opt)
+          (recur ((spec :assoc-fn) options (spec :name) ((spec :parse-fn) (second args)))
+                 extra-args
+                 (drop 2 args))
+
+          :default
+          (recur options (conj extra-args (first args)) (rest args)))))))
 
 (defn- switches-for
   [switches flag]
   (-> (for [^String s switches]
         (cond
-         (and flag (flag? s))            [(replace s #"\[no-\]" "no-") (replace s #"\[no-\]" "")]
-         (and flag (.startsWith s "--")) [(replace s #"--" "--no-") s]
-         :default                        [s]))
+          (and flag (flag? s))            [(replace s #"\[no-\]" "no-") (replace s #"\[no-\]" "")]
+          (and flag (.startsWith s "--")) [(replace s #"--" "--no-") s]
+          :default                        [s]))
       flatten))
 
 (defn- generate-spec
@@ -131,4 +139,3 @@
     (let [[options extra-args] (apply-specs specs args)
           banner  (with-out-str (banner-for specs))]
       [options extra-args banner])))
-
